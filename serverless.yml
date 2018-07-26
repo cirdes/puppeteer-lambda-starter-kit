@@ -1,0 +1,38 @@
+service: starter-kit
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+  memorySize: 1536
+  timeout: 180
+  # if needed (e.g. upload snapshot)
+  iamRoleStatements:
+   -  Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource: "*"
+
+functions:
+  test-function:
+    handler: index.handler
+    environment:
+      DEBUG: "0"
+
+package:
+  artifact: ./package.zip
+
+plugins:
+  - serverless-hooks-plugin
+
+resources:
+  Resources:
+    Screenshots:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: PublicRead
+        BucketName: screenshots-debug
+
+custom:
+  hooks:
+    package:initialize:
+      - npm run package
