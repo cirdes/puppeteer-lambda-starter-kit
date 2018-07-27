@@ -11,7 +11,7 @@ exports.getBrowser = (() => {
     if (typeof browser === 'undefined' || !await isBrowserAvailable(browser)) {
       await setupChrome();
       browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         executablePath: config.executablePath,
         args: config.launchOptionForLambda,
         dumpio: !!exports.DEBUG,

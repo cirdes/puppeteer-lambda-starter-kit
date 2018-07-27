@@ -10,6 +10,7 @@ provider:
    -  Effect: "Allow"
       Action:
         - "s3:PutObject"
+        - "s3:PutObjectAcl"
       Resource: "*"
 
 functions:
@@ -17,6 +18,10 @@ functions:
     handler: index.handler
     environment:
       DEBUG: "0"
+    events:
+      - http:
+          path: pdf
+          method: get
 
 package:
   artifact: ./package.zip
@@ -31,7 +36,10 @@ resources:
       Properties:
         AccessControl: PublicRead
         BucketName: screenshots-debug
-
+    ApiGatewayRestApi:
+        Properties:
+          BinaryMediaTypes:
+          - "*/*"
 custom:
   hooks:
     package:initialize:

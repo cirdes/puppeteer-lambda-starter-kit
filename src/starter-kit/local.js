@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer');
 
 (async () => {
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         slowMo: process.env.SLOWMO_MS,
         dumpio: !!config.DEBUG,
         // use chrome installed by puppeteer
