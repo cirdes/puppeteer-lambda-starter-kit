@@ -1,9 +1,7 @@
 const setup = require('./starter-kit/setup');
-const aws = require('aws-sdk');
-const fs = require('fs');
+const puppet = require('./utils/puppet');
 
 exports.handler = async (event, context, callback) => {
-  console.log(event);
   // For keeping the browser launch
   context.callbackWaitsForEmptyEventLoop = false;
   const browser = await setup.getBrowser();
@@ -22,13 +20,7 @@ exports.run = async (browser, params) => {
 
   // page creating and setup
   const page = await browser.newPage();
-  await page.setViewport({width: 1024, height: 720});
-  await page.setDefaultNavigationTimeout(60000);
-
-  // get ready to dismiss dialogs
-  page.on('dialog', async (dialog) => {
-    await dialog.dismiss();
-  });
+  await puppet.setup(page);
 
   // goes to page
   await page.goto('http://efisco.sefaz.pe.gov.br/sfi_trb_gpf/PREmitirCertidaoNegativaNarrativaDebitoFiscal',
@@ -37,42 +29,22 @@ exports.run = async (browser, params) => {
 
   // input data to forms
   await page.select('#cdTipoDocumento', '2');
+  await page.waitFor('select#cdOrgaoEmissor option[value="1"]');
   await page.select('select#cdOrgaoEmissor', '1');
   await page.type('#nuDocumento', cnpj);
-
-  // Go to download page
   await page.evaluate(() => {
     const element = document.querySelector('#btt_emitir');
     element.click();
   });
-  await page.waitForNavigation();
 
-  // Set download path and click
+  // Download certificate
   await page.waitFor('input[name="btt_pmu_acao_4"]');
-  await page._client.send('Page.setDownloadBehavior',
-    {behavior: 'allow', downloadPath: '/tmp/'});
   await page.evaluate(() => {
     const element = document.querySelector('input[name="btt_pmu_acao_4"]');
     element.click();
   });
-  await page.waitFor(5000);
-
-  // read pdf from disk
-  const pdf = await new Promise((resolve, reject) => {
-    fs.readFile('/tmp/RelatorioCertidaoNegativaInscrito.pdf', (err, data) => {
-      if (err) return reject(err);
-      resolve(data);
-    });
-  });
-
-  // Uplado to S3 Bucket
-  const s3 = new aws.S3({apiVersion: '2006-03-01'});
-  await s3.putObject({
-    ACL: 'public-read',
-    Bucket: 'screenshots-debug',
-    Key: 'RelatorioCertidaoNegativaInscrito.pdf',
-    Body: pdf,
-  }).promise();
+  await page.waitForNavigation({waitUntil: 'networkidle0'});
+  await puppet.updateToS3('RelatorioCertidaoNegativaInscrito.pdf');
 
   // response in API Gateway Format
   const response = {
