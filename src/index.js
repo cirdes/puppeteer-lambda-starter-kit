@@ -1,21 +1,23 @@
 const setup = require('./starter-kit/setup');
 const puppet = require('./utils/puppet');
 
-exports.handler = async (event, context, callback) => {
-  // For keeping the browser launch
-  context.callbackWaitsForEmptyEventLoop = false;
-  const browser = await setup.getBrowser();
-  exports.run(browser, event.queryStringParameters.cnpj).then(
-    (result) => callback(null, result)
-  ).catch(
-    (err) => callback(err)
-  );
+exports.handler = async (event) => {
+  let result;
+  let browser;
+  try {
+    browser = await setup.getBrowser();
+    result = await exports.run(browser, event.queryStringParameters);
+  } catch (err) {
+        console.log(err);
+        return err;
+  }
+  return result;
 };
 
 exports.run = async (browser, params) => {
   let cnpj = '17358877000151';
-  if (params) {
-    cnpj = params;
+  if (params && params.cnpj) {
+    cnpj = params.cnpj;
   }
 
   // page creating and setup
