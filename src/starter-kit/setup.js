@@ -1,6 +1,4 @@
 const fs = require('fs');
-// const tar = require('tar');
-// const decompressStream = require('../iltorb').decompressStream;
 const puppeteer = require('puppeteer');
 const config = require('./config');
 
@@ -47,59 +45,38 @@ const existsExecutableChrome = () => {
 };
 
 const setupLocalChrome = () => {
-  return new Promise(
-  (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let output = config.executablePath;
     const source = fs.createReadStream(config.localChromePath);
     const target = fs.createWriteStream(output);
     console.log(`source${source}`);
     console.log(`target${output}`);
-    source.on('error',
-      (error) => {
-        return reject(error);
-      }
-    );
+    source.on('error', (error) => {
+      return reject(error);
+    });
 
-    target.on('error',
-      (error) => {
-        return reject(error);
-      }
-    );
+    target.on('error', (error) => {
+      return reject(error);
+    });
 
-    target.on('close',
-      () => {
-        fs.chmod(output, '0755',
-          (error) => {
-            if (error) {
-              return reject(error);
-            }
+    target.on('close', () => {
+      fs.chmod(output, '0755', (error) => {
+        if (error) {
+          return reject(error);
+        }
 
-            return resolve(output);
-          }
-        );
-      }
-    );
+        return resolve(output);
+      });
+    });
 
     source.pipe(require(`${__dirname}/iltorb`).decompressStream()).pipe(target);
-  }
-);
-  // return new Promise((resolve, reject) => {
-  //   fs.createReadStream(config.localChromePath)
-  //   .on('error', (err) => reject(err))
-  //   .pipe(tar.x({
-  //     C: config.setupChromePath,
-  //   }))
-  //   .on('error', (err) => reject(err))
-  //   .on('end', () => resolve());
-  // });
+  });
 };
 
 const debugLog = (log) => {
   if (config.DEBUG) {
     let message = log;
     if (typeof log === 'function') message = log();
-    Promise.resolve(message).then(
-      (message) => console.log(message)
-    );
+    Promise.resolve(message).then((message) => console.log(message));
   }
 };
