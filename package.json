@@ -11,7 +11,7 @@
     "lint": "./node_modules/.bin/eslint src"
   },
   "dependencies": {
-    "puppeteer": "1.4.0",
+    "puppeteer": "^1.5.0",
     "tar": "^4.0.1"
   },
   "devDependencies": {
