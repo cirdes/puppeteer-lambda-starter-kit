@@ -10,6 +10,7 @@ const launchOptionForLambda = [
 ];
 
 const localChromePath = path.join('headless_shell.tar.gz');
+const localIltorbNodePath = path.join('iltorb.node');
 const remoteChromeS3Bucket = process.env.CHROME_BUCKET;
 const remoteChromeS3Key = process.env.CHROME_KEY || 'headless_shell.tar.gz';
 
@@ -24,6 +25,7 @@ const DEBUG = process.env.DEBUG;
 module.exports = {
     launchOptionForLambda,
     localChromePath,
+    localIltorbNodePath,
     remoteChromeS3Bucket,
     remoteChromeS3Key,
     setupChromePath,

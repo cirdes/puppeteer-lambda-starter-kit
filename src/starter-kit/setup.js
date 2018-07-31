@@ -1,7 +1,6 @@
-const aws = require('aws-sdk');
-const s3 = new aws.S3({apiVersion: '2006-03-01'});
 const fs = require('fs');
-const tar = require('tar');
+// const tar = require('tar');
+// const decompressStream = require('../iltorb').decompressStream;
 const puppeteer = require('puppeteer');
 const config = require('./config');
 
@@ -34,23 +33,9 @@ const isBrowserAvailable = async (browser) => {
 
 const setupChrome = async () => {
   if (!await existsExecutableChrome()) {
-    if (await existsLocalChrome()) {
-      debugLog('setup local chrome');
-      await setupLocalChrome();
-    } else {
-      debugLog('setup s3 chrome');
-      await setupS3Chrome();
-    }
+    await setupLocalChrome();
     debugLog('setup done');
   }
-};
-
-const existsLocalChrome = () => {
-  return new Promise((resolve, reject) => {
-    fs.exists(config.localChromePath, (exists) => {
-      resolve(exists);
-    });
-  });
 };
 
 const existsExecutableChrome = () => {
@@ -62,32 +47,51 @@ const existsExecutableChrome = () => {
 };
 
 const setupLocalChrome = () => {
-  return new Promise((resolve, reject) => {
-    fs.createReadStream(config.localChromePath)
-    .on('error', (err) => reject(err))
-    .pipe(tar.x({
-      C: config.setupChromePath,
-    }))
-    .on('error', (err) => reject(err))
-    .on('end', () => resolve());
-  });
-};
+  return new Promise(
+  (resolve, reject) => {
+    let output = config.executablePath;
+    const source = fs.createReadStream(config.localChromePath);
+    const target = fs.createWriteStream(output);
+    console.log(`source${source}`);
+    console.log(`target${output}`);
+    source.on('error',
+      (error) => {
+        return reject(error);
+      }
+    );
 
-const setupS3Chrome = () => {
-  return new Promise((resolve, reject) => {
-    const params = {
-      Bucket: config.remoteChromeS3Bucket,
-      Key: config.remoteChromeS3Key,
-    };
-    s3.getObject(params)
-    .createReadStream()
-    .on('error', (err) => reject(err))
-    .pipe(tar.x({
-      C: config.setupChromePath,
-    }))
-    .on('error', (err) => reject(err))
-    .on('end', () => resolve());
-  });
+    target.on('error',
+      (error) => {
+        return reject(error);
+      }
+    );
+
+    target.on('close',
+      () => {
+        fs.chmod(output, '0755',
+          (error) => {
+            if (error) {
+              return reject(error);
+            }
+
+            return resolve(output);
+          }
+        );
+      }
+    );
+
+    source.pipe(require(`${__dirname}/iltorb`).decompressStream()).pipe(target);
+  }
+);
+  // return new Promise((resolve, reject) => {
+  //   fs.createReadStream(config.localChromePath)
+  //   .on('error', (err) => reject(err))
+  //   .pipe(tar.x({
+  //     C: config.setupChromePath,
+  //   }))
+  //   .on('error', (err) => reject(err))
+  //   .on('end', () => resolve());
+  // });
 };
 
 const debugLog = (log) => {
